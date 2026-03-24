@@ -29,8 +29,11 @@ jobs:
       with:
         languages: ${{ matrix.language }}
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    - name: Manual Build
+      run: |
+        # Find all Java files in your repo and compile them
+        find . -name "*.java" > sources.txt
+        javac @sources.txt
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
