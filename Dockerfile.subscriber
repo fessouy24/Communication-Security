@@ -1,0 +1,5 @@
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY bin/ /app/bin/
+# Running the Client (SubscriberApp)
+CMD ["java", "-cp", "bin", "SubscriberSide.SubscriberApp"]
