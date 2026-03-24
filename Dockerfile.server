@@ -1,0 +1,5 @@
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY bin/ /app/bin/
+# Running the Server (BUEServiceApp)
+CMD ["java", "-cp", "bin", "BUEServiceSide.BueServiceApp"]
