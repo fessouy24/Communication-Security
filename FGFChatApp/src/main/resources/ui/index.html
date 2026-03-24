@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Chat</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-glass: rgba(255, 255, 255, 0.95);
+            --bg-app: #f1f5f9;
+            --sidebar-bg: #ffffff;
+            --chat-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --msg-in: #ffffff;
+            --msg-out: #e0e7ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-dark);
+        }
+
+        /* Container & Layout */
+        .chat-container {
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            background: var(--bg-app);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #ffffff;
+            color: var(--text-dark);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .chat-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-header h2::before {
+            content: '🔒';
+            font-size: 1.1rem;
+        }
+
+        .logout-btn {
+            background: #fee2e2;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover { background: #fecaca; transform: translateY(-1px); }
+
+        /* Modern Inputs & Buttons */
+        input {
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        /* Login Panels */
+        .login-panel {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f8fafc;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 380px;
+            text-align: center;
+        }
+
+        .login-card h3 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #0f172a;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            font-size: 0.95rem;
+            background: #f8fafc;
+        }
+
+        .login-card button {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 14px;
+            width: 100%;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+        }
+
+        .login-card button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .login-card button:active { transform: translateY(0); }
+
+        .login-card button.secondary {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            margin-top: 12px;
+        }
+        .login-card button.secondary:hover { background: #f1f5f9; color: var(--text-dark); }
+
+        .error { color: #ef4444; margin-top: 12px; font-size: 0.85rem; font-weight: 500; }
+
+        /* Main Workspace App Panel */
+        .main-panel { flex: 1; display: none; flex-direction: row; height: 100%; }
+
+        /* Sidebar Contacts */
+        .contacts-sidebar {
+            width: 320px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .add-contact {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
+
+        .add-contact input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            background: #f8fafc;
+        }
+
+        .add-contact button {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 0 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .add-contact button:hover { background: var(--primary-hover); }
+
+        .contacts-list { flex: 1; overflow-y: auto; padding: 10px; }
+
+        .contact-item {
+            padding: 14px 16px;
+            border-radius: 14px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .contact-item::before {
+            content: '';
+            display: block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: background 0.2s;
+        }
+
+        .contact-item:hover { background: #f1f5f9; }
+
+        .contact-item.selected {
+            background: #e0e7ff;
+            color: var(--primary);
+        }
+
+        .contact-item.selected::before {
+            background: var(--primary);
+        }
+
+        /* Chat Workspace Engine */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); }
+
+        .chat-header-contact {
+            background: #ffffff;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: #0f172a;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 65%;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            clear: both;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.outgoing {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.incoming {
+            background: var(--msg-in);
+            color: var(--text-dark);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .message .sender {
+            font-weight: 700;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+            color: var(--primary);
+        }
+
+        .message.outgoing .sender {
+            color: #a5b4fc;
+        }
+
+        .message .text { font-size: 0.95rem; }
+
+        .message .time {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 6px;
+        }
+        .message.outgoing .time { color: #c7d2fe; }
+
+        /* Compose Bar */
+        .compose-area {
+            background: #ffffff;
+            padding: 20px 24px;
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid var(--border-color);
+            align-items: center;
+        }
+
+        .compose-area input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            background: #f8fafc;
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        .compose-area button {
+            background: var(--primary);
+            border: none;
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .compose-area button:hover:not(:disabled) { background: var(--primary-hover); transform: scale(1.05); }
+        .compose-area button:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        /* Generic Toast & Utilities */
+        .toast-error {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .hidden { display: none !important; }
+        input:disabled { background-color: #f1f5f9; color: #94a3b8; }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="chat-header">
+        <h2>Secure Chat</h2>
+        <button class="logout-btn" id="logoutBtn" style="display: none;">Logout</button>
+    </div>
+
+    <div id="loginPanel" class="login-panel">
+        <div class="login-card">
+            <div id="step1">
+                <h3>Welcome</h3>
+                <p>Sign in or register your account</p>
+                <input type="text" id="username" placeholder="Username" autocomplete="username">
+                <input type="email" id="email" placeholder="Email" autocomplete="email">
+                <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+                <button id="requestOtpBtn">Request OTP</button>
+                <div id="loginError" class="error"></div>
+            </div>
+            <div id="step2" class="hidden">
+                <h3>Verify OTP</h3>
+                <p>Enter the 6‑digit code sent to your email.</p>
+                <input type="text" id="otp" placeholder="Enter OTP Code" maxlength="6">
+                <button id="verifyOtpBtn">Verify OTP</button>
+                <button id="backToStep1" class="secondary">Back</button>
+                <div id="otpError" class="error"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainPanel" class="main-panel">
+        <div class="contacts-sidebar">
+            <div class="add-contact">
+                <input type="text" id="newContact" placeholder="Username to add...">
+                <button id="addContactBtn">Add</button>
+            </div>
+            <div id="contactsList" class="contacts-list"></div>
+        </div>
+        <div class="chat-area">
+            <div id="chatHeader" class="chat-header-contact">Select a contact</div>
+            <div id="messagesArea" class="messages-area"></div>
+            <div class="compose-area">
+                <input type="text" id="messageInput" placeholder="Type your message here..." disabled>
+                <button id="sendBtn" disabled>➤</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="toastError" class="toast-error"></div>
+
+<script>
+    // ---------- Global state ----------
+    let currentUser = '';
+    let contacts = [];
+    let selectedContact = null;
+    let conversations = {};
+    let pendingUsername = '';
+
+    // ---------- Safe localStorage helpers ----------
+    function isLocalStorageAvailable() {
+        try {
+            return typeof localStorage !== 'undefined' && localStorage !== null;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function loadContacts() {
+        if (!isLocalStorageAvailable()) return [];
+        const stored = localStorage.getItem(`contacts_${currentUser}`);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                console.warn("Failed to parse stored contacts", e);
+            }
+        }
+        return [];
+    }
+
+    function saveContacts() {
+        if (!isLocalStorageAvailable()) return;
+        localStorage.setItem(`contacts_${currentUser}`, JSON.stringify(contacts));
+    }
+
+    function getJavaBridge() { return window.java || null; }
+
+    function showError(msg) {
+        setTimeout(() => {
+            const toast = document.getElementById('toastError');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 3000);
+        }, 0);
+    }
+
+    function addMessageToConversation(contact, sender, text, isOutgoing) {
+        if (!conversations[contact]) conversations[contact] = [];
+        conversations[contact].push({ sender, text, timestamp: new Date(), isOutgoing });
+        if (selectedContact === contact) renderMessages();
+        renderContactsList();
+    }
+
+    function renderMessages() {
+        const messagesDiv = document.getElementById('messagesArea');
+        if (!selectedContact || !conversations[selectedContact] || conversations[selectedContact].length === 0) {
+            messagesDiv.innerHTML = '<div style="text-align:center; color:#64748b; margin-top:20px; font-size:0.9rem;">No messages yet. Say hello! 👋</div>';
+            return;
+        }
+        messagesDiv.innerHTML = '';
+        conversations[selectedContact].forEach(msg => {
+            const div = document.createElement('div');
+            div.className = `message ${msg.isOutgoing ? 'outgoing' : 'incoming'}`;
+            const timeStr = msg.timestamp.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+            let senderHtml = '';
+            if (!msg.isOutgoing && msg.sender !== currentUser) senderHtml = `<div class="sender">${escapeHtml(msg.sender)}</div>`;
+            div.innerHTML = `${senderHtml}<div class="text">${escapeHtml(msg.text)}</div><div class="time">${timeStr}</div>`;
+            messagesDiv.appendChild(div);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function renderContactsList() {
+        const container = document.getElementById('contactsList');
+        if (!container) return;
+        container.innerHTML = '';
+        contacts.forEach(contact => {
+            const div = document.createElement('div');
+            div.className = `contact-item ${selectedContact === contact ? 'selected' : ''}`;
+            div.textContent = contact;
+            div.onclick = () => {
+                if (selectedContact === contact) return;
+                selectedContact = contact;
+                document.getElementById('chatHeader').textContent = `Chat with ${contact}`;
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                renderMessages();
+                renderContactsList();
+            };
+            container.appendChild(div);
+        });
+        if (contacts.length === 0) container.innerHTML = '<div style="padding:16px; text-align:center; color:#94a3b8; font-size:0.9rem;">No contacts yet. Add someone!</div>';
+    }
+
+    function addContact(username) {
+        const bridge = getJavaBridge();
+        if (!bridge) { showError('Java bridge not available.'); return false; }
+        const exists = bridge.userExists(username);
+        if (!exists) { showError(`User "${username}" does not exist.`); return false; }
+        if (username === currentUser) { showError("You cannot add yourself."); return false; }
+        if (contacts.includes(username)) { showError(`${username} already in contacts.`); return false; }
+        contacts.push(username);
+        renderContactsList();
+        saveContacts();
+        showError(`${username} added.`);
+        return true;
+    }
+
+    function sendMessageToContact(contact, plaintext) {
+        const bridge = getJavaBridge();
+        if (!bridge) { showError('Java bridge not available.'); return false; }
+        const success = bridge.sendMessage(contact, plaintext);
+        if (success) {
+            addMessageToConversation(contact, currentUser, plaintext, true);
+            document.getElementById('messageInput').value = '';
+        } else showError('Failed to send message.');
+        return success;
+    }
+
+    // ----- Login step UI -----
+    function showStep1() {
+        document.getElementById('step1').classList.remove('hidden');
+        document.getElementById('step2').classList.add('hidden');
+        document.getElementById('loginError').textContent = '';
+        document.getElementById('otpError').textContent = '';
+        document.getElementById('otp').value = '';
+        document.getElementById('username').disabled = false;
+        document.getElementById('email').disabled = false;
+        document.getElementById('password').disabled = false;
+        pendingUsername = '';
+    }
+    function showStep2() {
+        document.getElementById('step1').classList.add('hidden');
+        document.getElementById('step2').classList.remove('hidden');
+        document.getElementById('otpError').textContent = '';
+        document.getElementById('otp').focus();
+        document.getElementById('username').disabled = true;
+        document.getElementById('email').disabled = true;
+        document.getElementById('password').disabled = true;
+    }
+
+    // Called by Java
+    function otpRequestSuccess() {
+        pendingUsername = document.getElementById('username').value.trim();
+        showStep2();
+    }
+    function otpRequestFailed(msg) {
+        document.getElementById('loginError').textContent = msg;
+    }
+    function otpVerificationFailed(msg) {
+        document.getElementById('otpError').textContent = msg;
+    }
+
+    function loginSuccess(username) {
+        currentUser = username;
+        document.getElementById('loginPanel').style.display = 'none';
+        document.getElementById('mainPanel').style.display = 'flex';
+        document.getElementById('logoutBtn').style.display = 'block';
+        contacts = loadContacts();
+        renderContactsList();
+    }
+
+    function addMessageFromJava(sender, text, isOutgoing) {
+        const outgoing = (sender === currentUser);
+        addMessageToConversation(sender, sender, text, outgoing);
+        if (!outgoing && !contacts.includes(sender)) {
+            contacts.push(sender);
+            renderContactsList();
+            saveContacts();
+        }
+    }
+
+    function logout() {
+        const bridge = getJavaBridge();
+        if (bridge) bridge.logout();
+        currentUser = '';
+        contacts = [];
+        selectedContact = null;
+        conversations = {};
+        document.getElementById('loginPanel').style.display = 'flex';
+        document.getElementById('mainPanel').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('messageInput').disabled = true;
+        document.getElementById('sendBtn').disabled = true;
+        document.getElementById('username').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('loginError').textContent = '';
+        document.getElementById('otpError').textContent = '';
+        document.getElementById('chatHeader').textContent = 'Select a contact';
+        document.getElementById('messagesArea').innerHTML = '';
+        showStep1();
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+    }
+
+    // ----- Event listeners -----
+    document.getElementById('requestOtpBtn').onclick = () => {
+        const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        if (!username || !email || !password) {
+            document.getElementById('loginError').textContent = 'Please enter username, email, and password.';
+            return;
+        }
+        document.getElementById('loginError').textContent = '';
+        const bridge = getJavaBridge();
+        if (bridge) {
+            bridge.requestOtp(username, email, password);
+        } else {
+            showError('Java bridge not available.');
+        }
+    };
+
+    document.getElementById('verifyOtpBtn').onclick = () => {
+        const otp = document.getElementById('otp').value.trim();
+        if (!otp) { document.getElementById('otpError').textContent = 'Please enter the OTP.'; return; }
+        if (!pendingUsername) {
+            document.getElementById('otpError').textContent = 'No pending OTP request. Please request OTP again.';
+            showStep1();
+            return;
+        }
+        const bridge = getJavaBridge();
+        if (bridge) {
+            bridge.verifyOtp(pendingUsername, otp);
+        } else {
+            showError('Java bridge not available.');
+        }
+    };
+
+    document.getElementById('backToStep1').onclick = () => showStep1();
+
+    document.getElementById('addContactBtn').onclick = () => {
+        const contact = document.getElementById('newContact').value.trim();
+        if (contact) addContact(contact);
+        document.getElementById('newContact').value = '';
+    };
+
+    document.getElementById('sendBtn').onclick = () => {
+        const msg = document.getElementById('messageInput').value.trim();
+        if (msg && selectedContact) sendMessageToContact(selectedContact, msg);
+    };
+    document.getElementById('messageInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('sendBtn').click(); });
+    document.getElementById('logoutBtn').onclick = () => logout();
+
+    // Expose for Java
+    window.showError = showError;
+    window.otpRequestSuccess = otpRequestSuccess;
+    window.otpRequestFailed = otpRequestFailed;
+    window.otpVerificationFailed = otpVerificationFailed;
+    window.loginSuccess = loginSuccess;
+    window.addMessage = addMessageFromJava;
+    window.logout = logout;
+</script>
+</body>
+</html>
